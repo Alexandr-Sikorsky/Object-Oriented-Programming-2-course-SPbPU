@@ -1,0 +1,7 @@
+Rego|Nikolayev|Igor67@gmail.com|89193234610:WORK;89193234710:HOME;89193234540:OFFICE|Constantinovich|03.08.1999|Ulitsa Truda, 22
+Valentina|Dolgobuzova|Valentina32@google.com|83122281005:HOME;86665554433:WORK;89183234567:WORK|Ignatievna|14.12.1995|Ulitsa Komsomolova
+Petr|Osetr|Petr@tea.com|89193234576:HOME|Ivanovich|22.10.2024|Home
+Vasya|Pupkin|Vasya@vas.ru|89193781010:HOME;89193030303:WORK|Ivanovich|12.12.2012|Ulitsa Truda
+Ivan|Petrov|Ivan@ivan.eng|89191323414:OFFICE;89990002233:WORK|Petrovich|24.10.2009|
+Sveklana|Shurikova|Sveklana@red.ru|89193234601:WORK|Gennadyevna|20.06.1993|Ulitsa Molodogvardeythsev
+Tea|Pot|Tea@pot.pot|89003234512:WORK|||
