@@ -1,6 +1,7 @@
 #include "contact.h"
 using namespace std; 
 
+Contact::Contact() : name(""), surname(""), email(""), patronymic(""), bday(""), address("") {}
 
 Contact::Contact(const string& n, const string& s, const string& e, const vector <Phone>& ph, const string& p, const string& b, const string& a): 
     name(n), surname(s), email(e), phones (ph), patronymic(p), bday(b), address(a){}
@@ -45,3 +46,46 @@ string Contact::getFirstPhoneNumber() const {
 string Contact::getPatronymic() const { return patronymic; }
 string Contact::getBday() const { return bday; }
 string Contact::getAddress() const { return address; }
+
+//////////////////////////////////   Qt методы   //////////////////////////////////
+QString Contact::getNameQt() const { return QString::fromStdString(name); }
+QString Contact::getSurnameQt() const { return QString::fromStdString(surname); }
+QString Contact::getEmailQt() const { return QString::fromStdString(email); }
+QString Contact::getPatronymicQt() const { return QString::fromStdString(patronymic); }
+QString Contact::getBdayQt() const { return QString::fromStdString(bday); }
+QString Contact::getAddressQt() const { return QString::fromStdString(address); }
+
+QList<QPair<QString, QString>> Contact::getPhonesQt() const {
+    QList<QPair<QString, QString>> result;
+    for (const auto& phone : phones) {
+        result.append(qMakePair(
+            QString::fromStdString(phone.number),
+            QString::fromStdString(phone.type)
+        ));
+    }
+    return result;
+}
+
+void Contact::setNameQt(const QString& name) { this->name = name.toStdString(); }
+void Contact::setSurnameQt(const QString& surname) { this->surname = surname.toStdString(); }
+void Contact::setEmailQt(const QString& email) { this->email = email.toStdString(); }
+void Contact::setPatronymicQt(const QString& patronymic) { this->patronymic = patronymic.toStdString(); }
+void Contact::setBdayQt(const QString& bday) { this->bday = bday.toStdString(); }
+void Contact::setAddressQt(const QString& address) { this->address = address.toStdString(); }
+void Contact::addPhoneQt(const QString& phone, const QString& type) {
+    if (!phone.isEmpty()) {
+        phones.push_back(Phone(phone.toStdString(), type.toStdString()));
+    }
+}
+
+void Contact::removePhone(int index) {
+    if (index >= 0 && index < phones.size()) {
+        phones.erase(phones.begin() + index);
+    }
+}
+
+void Contact::removePhoneQt(int index) {
+    if (index >= 0 && index < phones.size()) {
+        phones.erase(phones.begin() + index);
+    }
+}

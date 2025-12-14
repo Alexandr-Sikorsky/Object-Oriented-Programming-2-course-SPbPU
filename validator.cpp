@@ -1,7 +1,9 @@
 #include "validator.h"
 #include <iostream>
 #include <regex>
-
+#include <QRegularExpressionValidator>
+#include <QDate>
+#include <QDebug>
 
 using namespace std;
 
@@ -11,14 +13,35 @@ Validator::Validator():
     PHONEONE(R"(^(\+7|8)\d{10}$)"),
     PHONETWO(R"(^(\+7|8)\(\d{3}\)\d{7}$)"), // phones
     PHONETHREE(R"(^(\+7|8)\(\d{3}\)\d{3}-\d{2}-\d{2}$)"),
-    DATE(R"(^\d{2}\.\d{2}\.\d{4}$)") // bday
-{}
+    DATE(R"(^\d{2}\.\d{2}\.\d{4}$)"), // bday
+
+    // Qt
+    qNAME(QRegularExpression("^[a-zA-Z][a-zA-Z\\d -]*[a-zA-Z\\d]$")),
+    qEMAIL(QRegularExpression("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")),
+    qPHONEONE(QRegularExpression("^(\\+7|8)\\d{10}$")),
+    qPHONETWO(QRegularExpression("^(\\+7|8)\\(\\d{3}\\)\\d{7}$")),
+    qPHONETHREE(QRegularExpression("^(\\+7|8)\\(\\d{3}\\)\\d{3}-\\d{2}-\\d{2}$")),
+    qDATE(QRegularExpression("^\\d{2}\\.\\d{2}\\.\\d{4}$"))
+{
+    // Проверка что регулярные выражения валидны
+    if (!qNAME.isValid()) qDebug() << "Invalid qNAME regex:" << qNAME.errorString();
+    if (!qEMAIL.isValid()) qDebug() << "Invalid qEMAIL regex:" << qEMAIL.errorString();
+    if (!qPHONEONE.isValid()) qDebug() << "Invalid qPHONEONE regex:" << qPHONEONE.errorString();
+    if (!qPHONETWO.isValid()) qDebug() << "Invalid qPHONETWO regex:" << qPHONETWO.errorString();
+    if (!qPHONETHREE.isValid()) qDebug() << "Invalid qPHONETHREE regex:" << qPHONETHREE.errorString();
+    if (!qDATE.isValid()) qDebug() << "Invalid qDATE regex:" << qDATE.errorString();
+}
 
 string Validator::trim(const string& str) const{
     size_t start = str.find_first_not_of(" \t");
     if (start == string::npos) return "";
     size_t end = str.find_last_not_of(" \t");
     return str.substr(start, end - start + 1);
+}
+
+QString Validator::qTrim(const QString& str) const
+{
+    return str.trimmed();
 }
 
 int daysInMonth(int month, int year) {
@@ -44,6 +67,7 @@ string Validator::validateName(const string& input) {
     }
     return text;
 }
+
 
 string Validator::validateSurname(const string& input) {
     string text = trim(input);
@@ -182,4 +206,151 @@ string Validator::validateBirthday(const string& input) {
 
 string Validator::validateAddress(const string& input) {
     return trim(input);
+}
+
+//////////////////////////////////   Qt методы   //////////////////////////////////
+
+QString Validator::validateNameQt(const QString& input) {
+    QString text = qTrim(input);
+    if (text.isEmpty()) {
+        return QString();
+    }
+    if (!qNAME.match(text).hasMatch()) {
+        return QString();
+    }
+    return text;
+}
+
+QString Validator::validateSurnameQt(const QString& input) {
+    QString text = qTrim(input);
+    if (text.isEmpty()) {
+        return QString();
+    }
+    if (!qNAME.match(text).hasMatch()) {
+        return QString();
+    }
+    return text;
+}
+
+QString Validator::validateEmailQt(const QString& input, const QString& username)
+{
+    QString text = qTrim(input);
+    if (text.isEmpty()) {
+        return QString();
+    }
+
+    // 1. Проверяем базовый формат email
+    if (!qEMAIL.match(text).hasMatch()) {
+        return QString();
+    }
+
+    // 2. Проверяем что email содержит имя (если username задан)
+    if (!username.isEmpty()) {
+        QString cleanUsername = username;
+        cleanUsername.remove(' '); // Убираем пробелы
+
+        int atPos = text.indexOf('@');
+        if (atPos != -1) {
+            QString emailUsername = text.left(atPos); // Имя в email
+
+            // Проверяем содержит ли email имя пользователя
+            if (!emailUsername.contains(cleanUsername)) {
+                return QString();
+            }
+        }
+    }
+
+    return text;
+}
+
+QString Validator::validatePhoneQt(const QString& input) {
+    QString text = qTrim(input);
+    if (text.isEmpty()) return QString();
+
+    if (!qPHONEONE.match(text).hasMatch() &&
+        !qPHONETWO.match(text).hasMatch() &&
+        !qPHONETHREE.match(text).hasMatch()) {
+        return QString();
+    }
+
+    QString etext;
+    for (QChar c : text) {
+        if (c.isDigit()) {
+            etext.append(c);
+        }
+    }
+    if (etext.startsWith('7')) {
+        etext[0] = '8';
+    }
+
+    return etext;
+}
+
+QString Validator::validatePatronymicQt(const QString& input) {
+    QString text = qTrim(input);
+    if (text.isEmpty()) return QString();
+    if (!qNAME.match(text).hasMatch()) {
+        return QString();
+    }
+    return text;
+}
+
+QString Validator::validateBirthdayQt(const QString& input) {
+    QString text = qTrim(input);
+    if (text.isEmpty()) return QString();
+
+    if (!qDATE.match(text).hasMatch()) {
+        return QString();
+    }
+
+    int day = text.mid(0, 2).toInt();
+    int month = text.mid(3, 2).toInt();
+    int year = text.mid(6, 4).toInt();
+
+    if (year < 1900 || year > 2025) {
+        return QString();
+    }
+    if (month < 1 || month > 12) {
+        return QString();
+    }
+
+    // Проверка дней в месяце
+    int daysInMonth;
+    if (month == 2) {
+        bool leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        daysInMonth = leap ? 29 : 28;
+    } else if (month == 4 || month == 6 || month == 9 || month == 11) {
+        daysInMonth = 30;
+    } else {
+        daysInMonth = 31;
+    }
+
+    if (day < 1 || day > daysInMonth) {
+        return QString();
+    }
+
+    // Используем стандартную библиотеку C++ вместо QDate
+    // чтобы избежать зависимости от Qt в этой функции
+    time_t now = time(0);
+    tm* current_time = localtime(&now);
+
+    int current_year = current_time->tm_year + 1900;
+    int current_month = current_time->tm_mon + 1;
+    int current_day = current_time->tm_mday;
+
+    if (year > current_year) {
+        return QString();
+    }
+    if (year == current_year && month > current_month) {
+        return QString();
+    }
+    if (year == current_year && month == current_month && day > current_day) {
+        return QString();
+    }
+
+    return text;
+}
+
+QString Validator::validateAddressQt(const QString& input) {
+    return qTrim(input);
 }

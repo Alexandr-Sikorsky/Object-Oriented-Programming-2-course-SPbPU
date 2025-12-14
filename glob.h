@@ -2,7 +2,9 @@
 #include "contact.h"
 #include "validator.h"
 #include <vector>
+#include <QString>
+#include <QVector>
 
 extern std::vector<Contact> contacts;
-extern std::string currentFilename;
+extern QString currentFilename;  // QString
 extern Validator validator;

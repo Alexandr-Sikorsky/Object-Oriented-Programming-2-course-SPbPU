@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <QString>
+#include <QList>
 
 using namespace std;
 
@@ -30,7 +32,7 @@ class Contact
 
     //////////////////////////////////   METHODS   //////////////////////////////////
     public:
-
+        Contact();
         Contact(const string& n, const string& s, const string& e, const vector<Phone>& ph, const string& p, const string& d, const string& a);
 
         void setName(const string& name);
@@ -52,6 +54,27 @@ class Contact
         string getPatronymic() const;
         string getBday() const;
         string getAddress() const;
+
+
+        // Qt методы
+        QString getNameQt() const;
+        QString getSurnameQt() const;
+        QString getEmailQt() const;
+        QList<QPair<QString, QString>> getPhonesQt() const;
+        QString getPatronymicQt() const;
+        QString getBdayQt() const;
+        QString getAddressQt() const;
+
+        void setNameQt(const QString& name);
+        void setSurnameQt(const QString& surname);
+        void setEmailQt(const QString& email);
+        void setPatronymicQt(const QString& patronymic);
+        void setBdayQt(const QString& bday);
+        void setAddressQt(const QString& address);
+        void addPhoneQt(const QString& phone, const QString& type = "WORK");
+
+        void removePhone(int index);
+        void removePhoneQt(int index);
 
         ~Contact();
 
