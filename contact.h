@@ -19,7 +19,6 @@ struct Phone {
 
 class Contact
 {
-    //////////////////////////////////   PARAMETRS   //////////////////////////////////
     private:
 
         string name;
@@ -30,7 +29,6 @@ class Contact
         string bday;
         string address;
 
-    //////////////////////////////////   METHODS   //////////////////////////////////
     public:
         Contact();
         Contact(const string& n, const string& s, const string& e, const vector<Phone>& ph, const string& p, const string& d, const string& a);
@@ -56,7 +54,7 @@ class Contact
         string getAddress() const;
 
 
-        // Qt методы
+        //// Qt методы ////
         QString getNameQt() const;
         QString getSurnameQt() const;
         QString getEmailQt() const;

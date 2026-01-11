@@ -40,7 +40,7 @@ public:
     QString validateNameQt(const QString& input);
     QString validateSurnameQt(const QString& input);
     QString validateEmailWithoutUsernameQt(const QString& input);
-    QString validateEmailQt(const QString& email, const QString& username);
+    QString validateEmailQt(const QString& input, const QString& username);
 
 
 //////////////////////////////////   Optional fields   //////////////////////////////////

@@ -35,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     proxyModel = new QSortFilterProxyModel(this); // модель для сортировки и фильтрации (без изменения реального порядка контактов)
     proxyModel->setSourceModel(contactModel);
 
+
     setupTable();
     loadContacts();
 

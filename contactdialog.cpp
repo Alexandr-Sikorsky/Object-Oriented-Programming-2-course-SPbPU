@@ -105,35 +105,21 @@ void ContactDialog::onAddPhoneClicked()
         return;
     }
 
-
-    // Упрощенная проверка телефона
-    QString validatedPhone;
-
-    // Удаляем все нецифровые символы для проверки
-    QString digitsOnly;
-    for (QChar c : phoneNumber) {
-        if (c.isDigit()) {
-            digitsOnly.append(c);
-        }
-    }
-
-
-    if (digitsOnly.length() == 11) {
-        // Преобразуем к стандартному виду 8XXXXXXXXXX
-        if (digitsOnly.startsWith("7")) {
-            digitsOnly[0] = '8';
-        }
-        validatedPhone = digitsOnly;
-    } else if (digitsOnly.length() == 10) {
-        // Добавляем 8 в начало
-        validatedPhone = "8" + digitsOnly;
-    } else {
+    QString validatedPhone = validator.validatePhoneQt(phoneNumber);
+    if (validatedPhone.isEmpty()) {
         QMessageBox::warning(this, "Error",
-            "Phone number must contain 10 or 11 digits.\n"
-            "Examples: +79991234567, 8(999)1234567");
+            "Invalid phone number format!\n\n"
+            "Allowed formats:\n"
+            "• +79991234567\n"
+            "• 89991234567\n"
+            "• +7(999)1234567\n"
+            "• 8(999)1234567\n"
+            "• +7(999)123-45-67\n"
+            "• 8(999)123-45-67");
+        ui->phoneEdit->selectAll();
+        ui->phoneEdit->setFocus();
         return;
     }
-
 
     QString phoneType = ui->phoneTypeCombo->currentText();
     currentContact.addPhoneQt(validatedPhone, phoneType);
@@ -144,7 +130,6 @@ void ContactDialog::onAddPhoneClicked()
 
     ui->statusLabel->setText("Phone added: " + validatedPhone);
     ui->statusLabel->setStyleSheet("color: green;");
-
 }
 
 void ContactDialog::onRemovePhoneClicked()
@@ -239,17 +224,22 @@ void ContactDialog::accept()
         return;
     }
 
-    // 5. Валидация email (САМОЕ ВАЖНОЕ!)
+    // 5. Валидация email
     QString validatedEmail = validator.validateEmailQt(email, name);
     if (validatedEmail.isEmpty()) {
-        QMessageBox::warning(this, "Error",
-            QString("Invalid email format or email doesn't contain your name.\n\n"
-                   "For name '%1', email should be like:\n"
-                   "• %2@example.com\n"
-                   "• %2.johnson@company.org\n\n"
-                   "Basic email format: username@domain.com")
-                .arg(name)
-                .arg(name.toLower()));
+        // Очищаем имя от пробелов с помощью стандартного метода
+        QString cleanName = name.trimmed().remove(' ');
+        QString lowerName = cleanName.toLower();
+
+        QMessageBox::warning(this, "Ошибка валидации email",
+            QString("Некорректный формат email или отсутствует имя в адресе.\n\n"
+                   "Для имени '%1' email должен содержать '%2' в любом регистре:\n"
+                   "• %3@example.com\n"
+                   "• %3.work@domain.org\n\n"
+                   "Формат: username@domain.com")
+                .arg(name.trimmed())   // Показываем имя без внешних пробелов
+                .arg(cleanName)        // Имя слитно (без пробелов)
+                .arg(lowerName));      // Пример в нижнем регистре
         ui->emailEdit->setFocus();
         ui->emailEdit->selectAll();
         return;

@@ -100,12 +100,12 @@ string Validator::validateEmail(const string& input, const string& username) {
     if (validated_email.empty()) {
         return "";
     }
-    
+
     if (!username.empty()) {
 
         string cleanUsername = username;
         cleanUsername.erase(remove(cleanUsername.begin(), cleanUsername.end(), ' '), cleanUsername.end());
-        
+
         size_t at_pos = validated_email.find('@');
         if (at_pos != string::npos) {
             string email_username = validated_email.substr(0, at_pos);
@@ -115,7 +115,7 @@ string Validator::validateEmail(const string& input, const string& username) {
             }
         }
     }
-    
+
     return validated_email;
 }
 
@@ -246,15 +246,17 @@ QString Validator::validateEmailQt(const QString& input, const QString& username
 
     // 2. Проверяем что email содержит имя (если username задан)
     if (!username.isEmpty()) {
-        QString cleanUsername = username;
-        cleanUsername.remove(' '); // Убираем пробелы
+        QString cleanUsername = qTrim(username);
+        cleanUsername.remove(' ');
+
+        // Приводим к нижнему регистру для регистронезависимого сравнения
+        QString cleanUsernameLower = cleanUsername.toLower();
 
         int atPos = text.indexOf('@');
         if (atPos != -1) {
-            QString emailUsername = text.left(atPos); // Имя в email
+            QString emailUsername = text.left(atPos);
 
-            // Проверяем содержит ли email имя пользователя
-            if (!emailUsername.contains(cleanUsername)) {
+            if (!emailUsername.toLower().contains(cleanUsernameLower)) {
                 return QString();
             }
         }
