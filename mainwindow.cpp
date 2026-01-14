@@ -339,7 +339,8 @@ void MainWindow::onLoadFile()
 void MainWindow::onAdvancedSearch()
 {
     QDialog dialog(this);
-    dialog.setWindowTitle("Advanced Search - All Fields");
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    dialog.setWindowTitle("Advanced Search");
     dialog.setMinimumWidth(350);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(&dialog);
@@ -689,6 +690,7 @@ void MainWindow::onSaveToDatabase()
 void MainWindow::onConnectToDatabase()
 {
     QDialog dialog(this);
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt::WindowContextHelpButtonHint);
     dialog.setWindowTitle("Connecting to Database");
 
     QFormLayout* layout = new QFormLayout(&dialog);

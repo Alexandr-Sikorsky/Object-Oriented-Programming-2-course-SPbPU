@@ -7,6 +7,7 @@ ContactDialog::ContactDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::ContactDialog)
 {
+    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     ui->setupUi(this);
     setupUi();
 
@@ -139,6 +140,8 @@ void ContactDialog::onRemovePhoneClicked()
         showValidationError("Please select a phone number to remove.");
         return;
     }
+
+
 
     int row = ui->phoneList->row(item);
     currentContact.removePhoneQt(row);
