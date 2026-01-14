@@ -1,10 +1,11 @@
 #include "contact.h"
-using namespace std; 
+#include <algorithm>
 
-Contact::Contact() : name(""), surname(""), email(""), patronymic(""), bday(""), address("") {}
-
-Contact::Contact(const string& n, const string& s, const string& e, const vector <Phone>& ph, const string& p, const string& b, const string& a): 
-    name(n), surname(s), email(e), phones (ph), patronymic(p), bday(b), address(a){}
+Contact::Contact() : m_id(-1), name(""), surname(""), email(""), patronymic(""), bday(""), address("") {}
+Contact::Contact(int id) : m_id(id), name(""), surname(""), email(""),
+                           patronymic(""), bday(""), address("") {}
+Contact::Contact(const string& n, const string& s, const string& e, const vector <Phone>& ph, const string& p, const string& b, const string& a, int id):
+    m_id(id), name(n), surname(s), email(e), phones (ph), patronymic(p), bday(b), address(a){}
 
 Contact::~Contact(){};
 
@@ -79,13 +80,13 @@ void Contact::addPhoneQt(const QString& phone, const QString& type) {
 }
 
 void Contact::removePhone(int index) {
-    if (index >= 0 && index < phones.size()) {
+    if (index >= 0 && static_cast<size_t>(index) < phones.size()) {
         phones.erase(phones.begin() + index);
     }
 }
 
 void Contact::removePhoneQt(int index) {
-    if (index >= 0 && index < phones.size()) {
+    if (index >= 0 && static_cast<size_t>(index) < phones.size()) {
         phones.erase(phones.begin() + index);
     }
 }

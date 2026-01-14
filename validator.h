@@ -44,7 +44,7 @@ public:
 
 
 //////////////////////////////////   Optional fields   //////////////////////////////////
-    string validatePhone(const string& input);  // first phone - required
+    string validatePhone(const string& input);
     string validatePatronymic(const string& input);
     string validateBirthday(const string& input);
     string validateAddress(const string& input);

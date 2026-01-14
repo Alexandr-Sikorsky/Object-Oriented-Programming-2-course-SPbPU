@@ -7,6 +7,9 @@
 #include <QLineEdit>
 #include "contact.h"
 #include "validator.h"
+#include "databasemanager.h"
+
+#include <QSqlDatabase>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -31,22 +34,31 @@ private slots:
     void onAbout();
     void onAdvancedSearch();
 
-
-    void updateContactTable();
+    void onLoadFromDatabase();
+    void onSaveToDatabase();
+    void onDeleteFromDatabase();
 
 private:
     Ui::MainWindow *ui;
     QStandardItemModel *contactModel;
     QSortFilterProxyModel *proxyModel;
+    QSqlDatabase m_db;
     Validator validator;
 
     void setupTable();
+    void updateContactTable();
     void loadContacts();
     void saveContacts();
     void applySimpleSearch(const QVector<QLineEdit*>& fieldEdits);
     void applyAdvancedSearchAllFields(const QVector<QLineEdit*>& fieldEdits);
     void clearAllFilters();
     int getSelectedContactIndex() const;
+
+    DatabaseManager m_dbManager;
+    bool m_isDatabaseMode = false; // Флаг: файл или БД
+    
+    void setupDatabaseMenu();
+    void onConnectToDatabase();
 };
 
 #endif // MAINWINDOW_H

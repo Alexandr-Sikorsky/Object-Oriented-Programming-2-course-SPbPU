@@ -20,7 +20,7 @@ struct Phone {
 class Contact
 {
     private:
-
+        int m_id = -1;
         string name;
         string surname;
         string email;
@@ -31,7 +31,11 @@ class Contact
 
     public:
         Contact();
-        Contact(const string& n, const string& s, const string& e, const vector<Phone>& ph, const string& p, const string& d, const string& a);
+        explicit Contact(int id);
+        Contact(const string& n, const string& s, const string& e, const vector<Phone>& ph, const string& p, const string& d, const string& a,  int id = -1);
+
+        int getId() const { return m_id; }
+        void setId(int id) { m_id = id; }
 
         void setName(const string& name);
         void setSurname(const string& surname);
@@ -41,6 +45,7 @@ class Contact
         void setPatronymic(const string& patronymic);
         void setBday(const string& bday);
         void setAddress(const string& address);
+        void removePhone(int index);
 
         string getName() const;
         string getSurname() const;
@@ -52,7 +57,6 @@ class Contact
         string getPatronymic() const;
         string getBday() const;
         string getAddress() const;
-
 
         //// Qt методы ////
         QString getNameQt() const;
@@ -70,12 +74,9 @@ class Contact
         void setBdayQt(const QString& bday);
         void setAddressQt(const QString& address);
         void addPhoneQt(const QString& phone, const QString& type = "WORK");
-
-        void removePhone(int index);
         void removePhoneQt(int index);
 
         ~Contact();
-
 };
 
 #endif // CONTACT_H

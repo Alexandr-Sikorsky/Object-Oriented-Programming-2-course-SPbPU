@@ -1,8 +1,10 @@
 QT += core gui widgets
+QT += sql
 
 CONFIG += c++17
 
 SOURCES += \
+    databasemanager.cpp \
     main.cpp \
     mainwindow.cpp \
     contactdialog.cpp \
@@ -11,6 +13,7 @@ SOURCES += \
     filework.cpp
 
 HEADERS += \
+    databasemanager.h \
     mainwindow.h \
     contactdialog.h \
     contact.h \
@@ -23,3 +26,5 @@ FORMS += \
     contactdialog.ui
 
 TARGET = PhoneBookQt
+
+DISTFILES +=

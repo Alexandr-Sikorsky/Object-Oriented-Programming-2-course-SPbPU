@@ -14,10 +14,12 @@
 #include <QTableView>
 #include <QDialog>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
+#include <QFormLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QDialogButtonBox>
+#include <QDebug>
+
 
 // CaseInsensitive - регистр не важен
 
@@ -31,10 +33,17 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    if (!ui->statusbar) {
+        ui->statusbar;
+    }
+
     contactModel = new QStandardItemModel(this); // модель таблицы Qt - представление данных (не сами данные)
     proxyModel = new QSortFilterProxyModel(this); // модель для сортировки и фильтрации (без изменения реального порядка контактов)
     proxyModel->setSourceModel(contactModel);
 
+    qDebug() << "Вызываем setupDatabaseMenu()";
+    setupDatabaseMenu();
+    qDebug() << "Меню базы данных создано";
 
     setupTable();
     loadContacts();
@@ -156,7 +165,7 @@ void MainWindow::updateContactTable()
 
         contactModel->appendRow(row);
     }
-    statusBar()->showMessage(QString("Total contacts: %1").arg(contacts.size()));
+    ui->statusbar->showMessage(QString("Total contacts: %1").arg(contacts.size()));
 }
 
 void MainWindow::loadContacts()
@@ -169,7 +178,7 @@ void MainWindow::saveContacts()
 {
 
     saveToFileQt(currentFilename);
-    statusBar()->showMessage("Contacts saved to " + currentFilename, 3000);
+    ui->statusbar->showMessage("Contacts saved to " + currentFilename, 3000);
 }
 
 int MainWindow::getSelectedContactIndex() const
@@ -198,7 +207,7 @@ void MainWindow::onAddContact()
         contacts.push_back(newContact);
         updateContactTable();
         saveContacts();
-        statusBar()->showMessage("Contact added successfully", 3000);
+        ui->statusbar->showMessage("Contact added successfully", 3000);
     }
 }
 
@@ -219,7 +228,7 @@ void MainWindow::onEditContact()
         updateContactTable();
         saveContacts();
 
-        statusBar()->showMessage("Contact updated successfully", 3000);
+        ui->statusbar->showMessage("Contact updated successfully", 3000);
     }
 }
 
@@ -232,19 +241,37 @@ void MainWindow::onDeleteContact()
     }
 
     Contact contactToDelete = contacts[index];
+    QString contactName = QString("%1 %2").arg(contactToDelete.getSurnameQt()).arg(contactToDelete.getNameQt());
+
     QMessageBox::StandardButton reply = QMessageBox::question(
         this, "Confirm Delete",
-        QString("Are you sure you want to delete contact:\n%1 %2?")
-            .arg(contactToDelete.getSurnameQt())
-            .arg(contactToDelete.getNameQt()),
+        QString("Are you sure you want to delete contact:\n%1?").arg(contactName),
         QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
+        // Удаляем из локального вектора
+        bool wasInDatabase = (contactToDelete.getId() != -1);
+        int contactId = contactToDelete.getId();
+
         contacts.erase(contacts.begin() + index);
         updateContactTable();
-        saveContacts();
 
-        statusBar()->showMessage("Contact deleted successfully", 3000);
+        // Если контакт был в базе данных - удаляем оттуда
+        if (m_isDatabaseMode && m_dbManager.isConnected() && wasInDatabase && contactId != -1) {
+            if (m_dbManager.deleteContact(contactId)) {
+                ui->statusbar->showMessage(QString("Contact '%1' deleted from database").arg(contactName), 3000);
+            } else {
+                ui->statusbar->showMessage(QString("Failed to delete contact '%1' from database: %2")
+                    .arg(contactName).arg(m_dbManager.lastError()), 5000);
+
+                // Восстанавливаем контакт в векторе при ошибке удаления
+                contacts.insert(contacts.begin() + index, contactToDelete);
+                updateContactTable();
+            }
+        }
+
+        saveContacts(); // Сохраняем в файл
+        ui->statusbar->showMessage("Contact deleted successfully", 3000);
     }
 }
 
@@ -276,7 +303,7 @@ void MainWindow::onSearchContact()
         }
     }
 
-    statusBar()->showMessage(QString("Found %1 contact(s)").arg(matchCount), 3000);
+    ui->statusbar->showMessage(QString("Found %1 contact(s)").arg(matchCount), 3000);
 }
 
 void MainWindow::onSaveFile()
@@ -305,7 +332,7 @@ void MainWindow::onLoadFile()
         readFileQt(currentFilename);
         updateContactTable();
         setWindowTitle("PhoneBook - " + currentFilename);
-        statusBar()->showMessage("Contacts loaded from " + currentFilename, 3000);
+        ui->statusbar->showMessage("Contacts loaded from " + currentFilename, 3000);
     }
 }
 
@@ -453,7 +480,7 @@ void MainWindow::applyAdvancedSearchAllFields(const QVector<QLineEdit*>& fieldEd
         }
     }
 
-    statusBar()->showMessage(QString("Found %1 contact(s)").arg(matchCount), 3000);
+    ui->statusbar->showMessage(QString("Found %1 contact(s)").arg(matchCount), 3000);
 
     // включение сортировки после фильтрации - чтобы не ломалось
     ui->tableView->setSortingEnabled(true);
@@ -470,7 +497,7 @@ void MainWindow::clearAllFilters()
 
     ui->tableView->clearSelection();
 
-    statusBar()->showMessage("Showing all contacts", 2000);
+    ui->statusbar->showMessage("Showing all contacts", 2000);
     ui->tableView->reset();
 }
 
@@ -487,4 +514,271 @@ void MainWindow::onAbout()
         "<li>Save/load to text files</li>"
         "<li>Data validation</li>"
         "</ul>");
+}
+
+void MainWindow::setupDatabaseMenu()
+{
+    QMenu* dbMenu = menuBar()->addMenu("Database");
+
+    // ДОБАВЛЯЕМ ПУНКТ ПОДКЛЮЧЕНИЯ
+    QAction* connectAction = dbMenu->addAction("Connect to PostgreSQL");
+    connect(connectAction, &QAction::triggered, this, &MainWindow::onConnectToDatabase);
+
+    // Остальные пункты
+    QAction* loadDbAction = dbMenu->addAction("Load from DB");
+    connect(loadDbAction, &QAction::triggered, this, &MainWindow::onLoadFromDatabase);
+
+    QAction* saveDbAction = dbMenu->addAction("Save to DB");
+    connect(saveDbAction, &QAction::triggered, this, &MainWindow::onSaveToDatabase);
+
+    QAction* deleteDbAction = dbMenu->addAction("Delete Selected from DB");
+    connect(deleteDbAction, &QAction::triggered, this, &MainWindow::onDeleteFromDatabase);
+
+    // Разделитель
+    dbMenu->addSeparator();
+
+    // Кнопка полной очистки базы
+    QAction* clearDbAction = dbMenu->addAction("Clear Entire Database");
+    connect(clearDbAction, &QAction::triggered, this, [this]() {
+        if (QMessageBox::question(this, "Clear Database",
+            "This will DELETE ALL CONTACTS from the database!\n"
+            "Are you absolutely sure?",
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes) {
+
+            QSqlQuery query;
+            if (query.exec("TRUNCATE TABLE phones CASCADE") &&
+                query.exec("TRUNCATE TABLE contacts CASCADE")) {
+                ui->statusbar->showMessage("Entire database cleared!", 3000);
+            } else {
+                ui->statusbar->showMessage("Error clearing database: " + query.lastError().text(), 5000);
+            }
+        }
+    });
+}
+
+
+void MainWindow::onLoadFromDatabase()
+{
+    if (!m_isDatabaseMode || !m_dbManager.isConnected()) {
+        onConnectToDatabase();
+        if (!m_isDatabaseMode || !m_dbManager.isConnected()) {
+            return;
+        }
+    }
+
+    try {
+        // Спрашиваем подтверждение, если есть локальные контакты
+        if (!contacts.empty()) {
+            QMessageBox::StandardButton reply = QMessageBox::question(
+                this, "Загрузка из базы",
+                QString("Все текущие контакты будут заменены данными из базы (%1 контактов).\nПродолжить?")
+                    .arg(m_dbManager.loadAllContacts().size()),
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No
+            );
+
+            if (reply != QMessageBox::Yes) {
+                return;
+            }
+        }
+
+        QVector<Contact> dbContacts = m_dbManager.loadAllContacts();
+        contacts.clear();
+
+        for (const Contact& contact : dbContacts) {
+            contacts.push_back(contact);
+        }
+
+        updateContactTable();
+        ui->statusbar->showMessage(
+            QString("Загружено %1 контактов из базы").arg(contacts.size()),
+            3000
+        );
+
+    } catch (const std::exception& e) {
+        ui->statusbar->showMessage("Ошибка загрузки: " + QString::fromStdString(e.what()), 5000);
+    }
+}
+
+void MainWindow::onSaveToDatabase()
+{
+    if (!m_isDatabaseMode || !m_dbManager.isConnected()) {
+        onConnectToDatabase();
+        if (!m_isDatabaseMode || !m_dbManager.isConnected()) {
+            return;
+        }
+    }
+
+    try {
+        // Загружаем существующие контакты из базы для сравнения
+        QVector<Contact> existingContacts = m_dbManager.loadAllContacts();
+        QSet<int> existingIds;
+
+        for (const Contact& contact : existingContacts) {
+            existingIds.insert(contact.getId());
+        }
+
+        int newCount = 0;
+        int updatedCount = 0;
+        int deletedCount = 0;
+        int errorCount = 0;
+
+        // 1. Сохраняем/обновляем контакты из приложения
+        for (auto& contact : contacts) {
+            if (contact.getId() == -1 || !existingIds.contains(contact.getId())) {
+                // Новый контакт - сохраняем
+                int newId;
+                if (m_dbManager.saveContact(contact, &newId)) {
+                    contact.setId(newId);
+                    newCount++;
+                } else {
+                    errorCount++;
+                    qDebug() << "Ошибка сохранения нового контакта:" << m_dbManager.lastError();
+                }
+            } else {
+                // Существующий контакт - обновляем
+                if (m_dbManager.updateContact(contact.getId(), contact)) {
+                    updatedCount++;
+                } else {
+                    errorCount++;
+                    qDebug() << "Ошибка обновления контакта ID" << contact.getId()
+                             << ":" << m_dbManager.lastError();
+                }
+            }
+        }
+
+        // 2. Удаляем контакты, которых нет в приложении, но есть в базе
+        for (const Contact& dbContact : existingContacts) {
+            bool found = false;
+            for (const Contact& appContact : contacts) {
+                if (appContact.getId() == dbContact.getId()) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                if (m_dbManager.deleteContact(dbContact.getId())) {
+                    deletedCount++;
+                } else {
+                    errorCount++;
+                    qDebug() << "Ошибка удаления контакта ID" << dbContact.getId()
+                             << ":" << m_dbManager.lastError();
+                }
+            }
+        }
+
+        QString message = QString("БД синхронизирована: +%1 новых, ~%2 обновлено, -%3 удалено")
+            .arg(newCount).arg(updatedCount).arg(deletedCount);
+
+        if (errorCount > 0) {
+            message += QString(", %1 ошибок").arg(errorCount);
+        }
+
+        ui->statusbar->showMessage(message, 5000);
+
+        // Обновляем локальные данные после синхронизации
+        if (newCount > 0 || deletedCount > 0) {
+            onLoadFromDatabase();
+        }
+
+    } catch (const std::exception& e) {
+        ui->statusbar->showMessage("Ошибка синхронизации: " + QString::fromStdString(e.what()), 5000);
+    }
+}
+
+void MainWindow::onConnectToDatabase()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("Подключение к базе данных");
+
+    QFormLayout* layout = new QFormLayout(&dialog);
+    QLineEdit* dbEdit = new QLineEdit("postgres", &dialog);
+    QLineEdit* userEdit = new QLineEdit("postgres", &dialog);
+    QLineEdit* passEdit = new QLineEdit(&dialog);
+    passEdit->setEchoMode(QLineEdit::Password);
+
+    layout->addRow("База данных:", dbEdit);
+    layout->addRow("Пользователь:", userEdit);
+    layout->addRow("Пароль:", passEdit);
+
+    QDialogButtonBox* buttons = new QDialogButtonBox(
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    layout->addWidget(buttons);
+
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        if (m_dbManager.connectToDatabase(dbEdit->text(), userEdit->text(), passEdit->text())) {
+            ui->statusbar->showMessage("Успешное подключение к PostgreSQL!", 5000);
+            m_isDatabaseMode = true;
+
+            // Добавляем визуальный индикатор
+            if (!ui->statusbar->findChild<QLabel*>("dbStatus")) {
+                QLabel* dbStatus = new QLabel("PostgreSQL", this);
+                dbStatus->setObjectName("dbStatus");
+                dbStatus->setStyleSheet("color: green; font-weight: bold;");
+                ui->statusbar->addWidget(dbStatus);
+            }
+        } else {
+            // ОШИБКА ПОДКЛЮЧЕНИЯ
+            QString errorMsg = "Ошибка подключения:\n" + m_dbManager.lastError();
+            ui->statusbar->showMessage(errorMsg, 10000);
+
+            // Показываем детальное окно ошибки
+            QMessageBox::critical(this, "Ошибка базы данных",
+                "Не удалось подключиться к PostgreSQL:\n\n" +
+                m_dbManager.lastError() + "\n\n" +
+                "Проверьте:\n" +
+                "• Сервер PostgreSQL запущен\n" +
+                "• Правильные логин/пароль\n" +
+                "• Существует база данных");
+        }
+    }
+}
+
+void MainWindow::onDeleteFromDatabase()
+{
+    if (!m_isDatabaseMode || !m_dbManager.isConnected()) {
+        onConnectToDatabase();
+        if (!m_isDatabaseMode || !m_dbManager.isConnected()) {
+            return;
+        }
+    }
+
+    int index = getSelectedContactIndex();
+    if (index == -1) {
+        QMessageBox::warning(this, "Warning", "Please select a contact to delete from database.");
+        return;
+    }
+
+    Contact contactToDelete = contacts[index];
+    if (contactToDelete.getId() == -1) {
+        QMessageBox::warning(this, "Warning", "This contact is not in the database yet.\nSave it first before deleting from database.");
+        return;
+    }
+
+    QString contactName = QString("%1 %2").arg(contactToDelete.getSurnameQt()).arg(contactToDelete.getNameQt());
+
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this, "Delete from Database",
+        QString("This will delete contact '%1' ONLY from the database.\n"
+                "The contact will remain in the application.\n"
+                "Are you sure?")
+            .arg(contactName),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        if (m_dbManager.deleteContact(contactToDelete.getId())) {
+            // Обнуляем ID контакта, чтобы он считался новым при следующем сохранении
+            contactToDelete.setId(-1);
+            contacts[index] = contactToDelete;
+            updateContactTable();
+
+            ui->statusbar->showMessage(QString("Contact '%1' deleted from database only").arg(contactName), 3000);
+        } else {
+            ui->statusbar->showMessage(QString("Failed to delete contact '%1' from database: %2")
+                .arg(contactName).arg(m_dbManager.lastError()), 5000);
+        }
+    }
 }

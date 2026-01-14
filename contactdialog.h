@@ -4,6 +4,7 @@
 #include <QDialog>
 #include "contact.h"
 #include "validator.h"
+#include "databasemanager.h"
 
 namespace Ui {
 class ContactDialog;
@@ -24,13 +25,16 @@ private slots:
     void onAddPhoneClicked();
     void onRemovePhoneClicked();
     void validateForm();
-
     void accept() override;
 
 private:
     Ui::ContactDialog *ui;
     Contact currentContact;
     Validator validator;
+
+    bool m_isNewContact = true;
+    bool m_dbMode = false;
+    DatabaseManager* m_dbManager = nullptr;
 
     void setupUi();
     void updatePhoneList();

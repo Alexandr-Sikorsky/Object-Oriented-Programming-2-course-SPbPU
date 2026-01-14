@@ -10,7 +10,7 @@ ContactDialog::ContactDialog(QWidget *parent)
     ui->setupUi(this);
     setupUi();
 
-    // Подключаем сигналы кнопок
+    // Сигналы кнопок
     connect(ui->addPhoneButton, &QPushButton::clicked, this, &ContactDialog::onAddPhoneClicked);
     connect(ui->removePhoneButton, &QPushButton::clicked, this, &ContactDialog::onRemovePhoneClicked);
 
@@ -277,6 +277,28 @@ void ContactDialog::accept()
     currentContact.setBdayQt(birthdayStr);
     currentContact.setAddressQt(validator.validateAddressQt(address));
 
+    if (m_isNewContact) {
+        if (m_dbMode && m_dbManager->isConnected()) {
+            int id;
+            if (m_dbManager->saveContact(currentContact, &id)) {
+                currentContact.setId(id);
+                QDialog::accept();
+                QMessageBox::critical(this, "Database Error",
+                    "Failed to update contact:\n" + m_dbManager->lastError());
+                return;
+            }
+        }
+    }
+    else {
+        if (m_dbMode && m_dbManager->isConnected()) {
+            if (!m_dbManager->updateContact(currentContact.getId(), currentContact)) {
+                QMessageBox::critical(this, "Database Error", 
+                    "Failed to update contact:\n" + m_dbManager->lastError());
+                return;
+            }
+        }
+    }
+    
 
     // 9. Закрываем диалог
     QDialog::accept();
