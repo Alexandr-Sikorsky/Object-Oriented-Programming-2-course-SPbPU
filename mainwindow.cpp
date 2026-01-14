@@ -571,7 +571,7 @@ void MainWindow::onLoadFromDatabase()
         if (!contacts.empty()) {
             QMessageBox::StandardButton reply = QMessageBox::question(
                 this, "Загрузка из базы",
-                QString("Все текущие контакты будут заменены данными из базы (%1 контактов).\nПродолжить?")
+                QString("All current contacts will be replaced with data from the database (%1 contacts).\nContinue?")
                     .arg(m_dbManager.loadAllContacts().size()),
                 QMessageBox::Yes | QMessageBox::No, QMessageBox::No
             );
@@ -590,7 +590,7 @@ void MainWindow::onLoadFromDatabase()
 
         updateContactTable();
         ui->statusbar->showMessage(
-            QString("Загружено %1 контактов из базы").arg(contacts.size()),
+            QString("%1 contacts loaded from the database").arg(contacts.size()),
             3000
         );
 
@@ -667,11 +667,11 @@ void MainWindow::onSaveToDatabase()
             }
         }
 
-        QString message = QString("БД синхронизирована: +%1 новых, ~%2 обновлено, -%3 удалено")
+        QString message = QString("DB synchronized: +%1 new, ~%2 update, -%3 delete")
             .arg(newCount).arg(updatedCount).arg(deletedCount);
 
         if (errorCount > 0) {
-            message += QString(", %1 ошибок").arg(errorCount);
+            message += QString(", %1 errors").arg(errorCount);
         }
 
         ui->statusbar->showMessage(message, 5000);
@@ -689,7 +689,7 @@ void MainWindow::onSaveToDatabase()
 void MainWindow::onConnectToDatabase()
 {
     QDialog dialog(this);
-    dialog.setWindowTitle("Подключение к базе данных");
+    dialog.setWindowTitle("Connecting to Database");
 
     QFormLayout* layout = new QFormLayout(&dialog);
     QLineEdit* dbEdit = new QLineEdit("postgres", &dialog);
@@ -697,9 +697,9 @@ void MainWindow::onConnectToDatabase()
     QLineEdit* passEdit = new QLineEdit(&dialog);
     passEdit->setEchoMode(QLineEdit::Password);
 
-    layout->addRow("База данных:", dbEdit);
-    layout->addRow("Пользователь:", userEdit);
-    layout->addRow("Пароль:", passEdit);
+    layout->addRow("Database:", dbEdit);
+    layout->addRow("Contact:", userEdit);
+    layout->addRow("Password:", passEdit);
 
     QDialogButtonBox* buttons = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);

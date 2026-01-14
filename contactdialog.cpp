@@ -19,8 +19,8 @@ ContactDialog::ContactDialog(QWidget *parent)
 
 
     // Настройка валидаторов
-    ui->nameEdit->setPlaceholderText("Enter name (letters only)");
-    ui->surnameEdit->setPlaceholderText("Enter surname (letters only)");
+    ui->nameEdit->setPlaceholderText("Enter name");
+    ui->surnameEdit->setPlaceholderText("Enter surname");
     ui->emailEdit->setPlaceholderText("user@example.com");
     ui->phoneEdit->setPlaceholderText("+79991234567 or 8(999)123-45-67");
     ui->patronymicEdit->setPlaceholderText("Optional");
@@ -137,12 +137,6 @@ void ContactDialog::onRemovePhoneClicked()
     QListWidgetItem *item = ui->phoneList->currentItem();
     if (!item) {
         showValidationError("Please select a phone number to remove.");
-        return;
-    }
-
-    // Нельзя удалить последний телефон
-    if (ui->phoneList->count() <= 1) {
-        showValidationError("Cannot delete the last phone number. At least one phone is required.");
         return;
     }
 
